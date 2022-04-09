@@ -4,7 +4,6 @@
 add_executable(${PROJECT_NAME} 
   main.cpp
   Application.cpp
-  MultiViewApp.cpp
 )
 
 # https://github.com/mariusbancila/stduuid

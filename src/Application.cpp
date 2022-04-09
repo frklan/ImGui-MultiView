@@ -18,6 +18,8 @@
 #include <spdlog/spdlog.h>
 
 #include "Application.h"
+#include "DebugWindow.h"
+#include "SplitViewWindow.h"
 
 using namespace std::chrono_literals;
 
@@ -33,7 +35,9 @@ namespace mv {
     setup_sdl();
     setup_imgui();
 
-    m_debug_windows.emplace_back();
+
+    m_windows.push_back(std::make_unique<DebugWindow>());
+    m_windows.push_back(std::make_unique<SplitViewWindow>());
   }
 
   Application::~Application() {
@@ -63,9 +67,15 @@ namespace mv {
             m_ui_scale = std::clamp(m_ui_scale - 1.0F, UI_SCALE_MIN, UI_SCALE_MAX);
             break;
           case SDLK_n:
-            m_debug_windows.emplace_back();
+            m_windows.push_back(std::make_unique<DebugWindow>());
             break;
           default:
+            break;
+          }
+        } else if((event.key.keysym.mod & KMOD_GUI) != 0) {
+          switch(event.key.keysym.sym) {
+          case SDLK_n:
+            m_windows.push_back(std::make_unique<SplitViewWindow>());
             break;
           }
         }
@@ -90,15 +100,10 @@ namespace mv {
         ImGui_ImplSDL2_NewFrame(m_window.get());
         ImGui::NewFrame();
 
+        process();
+
         begin_render();
-
-        for(auto &win : m_debug_windows) {
-          win.render();
-        }
-        m_debug_windows.erase(std::remove_if(m_debug_windows.begin(), m_debug_windows.end(), [](const DebugWindow &w) { return w.close(); }), m_debug_windows.end());
-
         render();
-        // render_main_debug();
         end_render();
       }
     } catch(std::exception &e) {
@@ -109,32 +114,23 @@ namespace mv {
     return 0;
   }
 
-  void Application::render_main_debug() {
-    const auto *main_viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 650, main_viewport->WorkPos.y + 20), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(550, 680), ImGuiCond_FirstUseEver);
-
-
-    const auto window_title = fmt::format("Main Debug {} {}###AnimatedTitle", "|/-\\"[(int)(ImGui::GetTime() / 0.25f) & 3], ImGui::GetFrameCount());
-    if(ImGui::Begin(window_title.c_str(), nullptr)) {
-      ImGui::Text("%f", m_ui_scale);
-      ImGui::Text("%d debug views", m_debug_windows.size());
-
-      if(ImGui::BeginMainMenuBar()) {
-        if(ImGui::BeginMenu("Menu")) {
-
-          if(ImGui::MenuItem("Open new debug", nullptr)) {
-            m_debug_windows.emplace_back();
-          }
-          ImGui::MenuItem("Console", nullptr);
-          ImGui::MenuItem("Log", nullptr);
-
-          ImGui::EndMenu();
-        }
-        ImGui::EndMainMenuBar();
-      }
+  void Application::process() {
+    for(auto &win : m_windows) {
+      win->process();
     }
-    ImGui::End();
+  }
+
+  void Application::render() {
+    // ImGui::ShowDemoWindow();
+    //   ImPlot::ShowDemoWindow();
+    //   ImGui::ShowMetricsWindow();
+
+    for(auto &win : m_windows) {
+      win->render();
+    }
+
+
+    m_windows.erase(std::remove_if(m_windows.begin(), m_windows.end(), [](const std::unique_ptr<Window> &w) { return w->should_close(); }), m_windows.end());
   }
 
   void Application::setup_sdl() {
@@ -157,7 +153,7 @@ namespace mv {
     ImGui_ImplSDLRenderer_Init(m_renderer.get());
 
     ImGui::GetIO().ConfigWindowsResizeFromEdges = true;
-    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;// NOLINT:hicpp-signed-bitwise
   }
 
   void Application::begin_render() {
@@ -171,9 +167,8 @@ namespace mv {
 
     ImGui::Begin(dockspace_name,
       nullptr,
-      ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus);
+      ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus);// NOLINT:hicpp-signed-bitwise
 
-    // const auto dockspace_id = ImGui::GetID(dockspace_name);
     ImGui::DockSpace(dockspace_id, ImVec2(0.0F, 0.0F), ImGuiDockNodeFlags_None);
   }
 
@@ -183,5 +178,24 @@ namespace mv {
     SDL_RenderClear(m_renderer.get());
     ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
     SDL_RenderPresent(m_renderer.get());
+  }
+
+  void Application::set_theme() {
+    const ImVec4 bg = ImColor(0x28, 0x2a, 0x36);// NOLINT: cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers
+    const ImVec4 bg_darker = ImColor(0x19, 0x1a, 0x21);// NOLINT: cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers
+    const ImVec4 purple = ImColor(0xbd, 0x93, 0xf9, 0x55);// NOLINT: cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers
+
+    auto &style = ImGui::GetStyle();
+    style.FrameBorderSize = 1.0F;
+    style.WindowBorderSize = 1.0F;
+    style.WindowRounding = 8.0F;// NOLINT: cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers
+    style.WindowPadding = ImVec2(5.0F, 5.0F);// NOLINT: cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers
+
+    style.Colors[ImGuiCol_WindowBg] = bg;
+    style.Colors[ImGuiCol_HeaderActive] = bg_darker;
+    style.Colors[ImGuiCol_DockingEmptyBg] = bg_darker;
+    style.Colors[ImGuiCol_Border] = purple;
+    style.Colors[ImGuiCol_MenuBarBg] = bg_darker;
+    style.Colors[ImGuiCol_TitleBgActive] = bg_darker;
   }
 }// namespace mv

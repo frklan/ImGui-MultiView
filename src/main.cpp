@@ -5,7 +5,7 @@
 
 #include <spdlog/spdlog.h>
 
-#include "MultiViewApp.h"
+#include "Application.h"
 
 /************************
  *
@@ -16,7 +16,7 @@
 int main(int /*argc*/, char ** /*argv*/) {
   spdlog::info("-=gui=-");
   try {
-    mv::MultiViewApp app;
+    mv::Application app;
     app.run();
   } catch(std::exception &e) {
     spdlog::error("{}", e.what());
