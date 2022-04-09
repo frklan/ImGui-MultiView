@@ -149,7 +149,7 @@ namespace mv {
     ImPlot::StyleColorsDark();
 
     ImGui::GetStyle().ScaleAllSizes(m_ui_scale);
-    ImGui_ImplSDL2_InitForSDLRenderer(m_window.get());
+    ImGui_ImplSDL2_InitForSDLRenderer(m_window.get(), m_renderer.get());
     ImGui_ImplSDLRenderer_Init(m_renderer.get());
 
     ImGui::GetIO().ConfigWindowsResizeFromEdges = true;
@@ -197,5 +197,10 @@ namespace mv {
     style.Colors[ImGuiCol_Border] = purple;
     style.Colors[ImGuiCol_MenuBarBg] = bg_darker;
     style.Colors[ImGuiCol_TitleBgActive] = bg_darker;
+
+    // Set plot axis bg to transparent.
+    auto &plot_style = ImPlot::GetStyle();
+    plot_style.Colors[ImPlotCol_AxisBgHovered] = ImVec4(0, 0, 0, 0);
+    plot_style.Colors[ImPlotCol_AxisBgActive] = ImVec4(0, 0, 0, 0);
   }
 }// namespace mv

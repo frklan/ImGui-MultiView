@@ -30,8 +30,11 @@ namespace mv {
 
         ImGui::SetNextWindowPos(ImVec2(DEFAULT_WINDOW_POS_X, DEFAULT_WINDOW_POS_Y), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(ImVec2(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT), ImGuiCond_FirstUseEver);
+
         if(ImGui::Begin(m_window_title.c_str(), &m_is_open, ImGuiWindowFlags_NoSavedSettings)) {
-          if(ImPlot::BeginPlot("Frame time", nullptr, "mS", ImGui::GetContentRegionAvail(), ImPlotFlags_None, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_NoLabel | ImPlotAxisFlags_NoDecorations)) {// NOLINT:hicpp-signed-bitwise
+          if(ImPlot::BeginPlot("Frame time", ImGui::GetContentRegionAvail())) {
+            ImPlot::SetupAxis(ImAxis_Y1, "mS");
+            ImPlot::SetupAxis(ImAxis_X1, "", ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_NoLabel | ImPlotAxisFlags_NoTickLabels);
             ImPlot::PlotLine("##time", m_frametime_history.data(), static_cast<int>(m_frametime_history.size()));
             ImPlot::EndPlot();
           }

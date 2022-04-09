@@ -2,14 +2,12 @@ include(FetchContent)
 # ImGui docking branch
 FetchContent_Declare(imgui
   GIT_REPOSITORY "https://github.com/ocornut/imgui.git"
-  #GIT_TAG "15b4a064f9244c430e65214f7249b615fb394321"
   GIT_TAG "505f19e3b00d54623566dda354980c7f3410f2b5"
 )
 FetchContent_MakeAvailable(imgui)
 
 FetchContent_Declare(implot
   GIT_REPOSITORY "https://github.com/epezent/implot.git"
-  #GIT_TAG "dea3387cdcc1d6a7ee3607f8a37a9dce8a85224f"
   GIT_TAG "116024321845529bd9aacaa00216d91f15b430e2"
 )
 FetchContent_MakeAvailable(implot)
