@@ -44,42 +44,46 @@ namespace mv {
     SDL_Quit();
   }
 
-  int Application::run() {
-    assert(m_renderer);// NOLINT: cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay
-    assert(m_window);// NOLINT: cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay
-
-    // Main loop
-    bool should_quit{false};
+  bool Application::process_events() {
+    bool should_quit = false;
     SDL_Event event{};
-    try {
-      while(!should_quit) {
-        while(SDL_PollEvent(&event) != 0) {
-          ImGui_ImplSDL2_ProcessEvent(&event);
-          switch(event.type) {
-          case SDL_QUIT:
-            should_quit = true;
+    while(SDL_PollEvent(&event) != 0) {
+      ImGui_ImplSDL2_ProcessEvent(&event);
+      switch(event.type) {
+      case SDL_QUIT:
+        should_quit = true;
+        break;
+      case SDL_KEYDOWN:
+        if((event.key.keysym.mod & KMOD_CTRL) != 0) {
+          switch(event.key.keysym.sym) {
+          case SDLK_PLUS:
+            m_ui_scale = std::clamp(m_ui_scale + 1.0F, UI_SCALE_MIN, UI_SCALE_MAX);
             break;
-          case SDL_KEYDOWN:
-            if((event.key.keysym.mod & KMOD_CTRL) != 0) {
-              switch(event.key.keysym.sym) {
-              case SDLK_PLUS:
-                m_ui_scale = std::clamp(m_ui_scale + 1.0F, UI_SCALE_MIN, UI_SCALE_MAX);
-                break;
-              case SDLK_MINUS:
-                m_ui_scale = std::clamp(m_ui_scale - 1.0F, UI_SCALE_MIN, UI_SCALE_MAX);
-                break;
-              case SDLK_n:
-                m_debug_windows.emplace_back();
-                break;
-              default:
-                break;
-              }
-            }
+          case SDLK_MINUS:
+            m_ui_scale = std::clamp(m_ui_scale - 1.0F, UI_SCALE_MIN, UI_SCALE_MAX);
+            break;
+          case SDLK_n:
+            m_debug_windows.emplace_back();
             break;
           default:
             break;
           }
         }
+        break;
+      default:
+        break;
+      }
+    }
+    return should_quit;
+  }
+
+  int Application::run() {
+    // Main loop
+    bool should_quit{false};
+    try {
+      while(!should_quit) {
+        should_quit = process_events();
+
         /* Draw stuff */
         set_theme();
         ImGui_ImplSDLRenderer_NewFrame();
@@ -93,43 +97,9 @@ namespace mv {
         }
         m_debug_windows.erase(std::remove_if(m_debug_windows.begin(), m_debug_windows.end(), [](const DebugWindow &w) { return w.close(); }), m_debug_windows.end());
 
-
-        const auto *main_viewport = ImGui::GetMainViewport();
-        ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 650, main_viewport->WorkPos.y + 20), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(550, 680), ImGuiCond_FirstUseEver);
-
-
-        const auto window_title = fmt::format("Main Debug {} {}###AnimatedTitle", "|/-\\"[(int)(ImGui::GetTime() / 0.25f) & 3], ImGui::GetFrameCount());
-        if(ImGui::Begin(window_title.c_str(), nullptr)) {
-          ImGui::Text("%f", m_ui_scale);
-          ImGui::Text("%d debug views", m_debug_windows.size());
-
-          if(ImGui::BeginMainMenuBar()) {
-            if(ImGui::BeginMenu("Menu")) {
-
-              if(ImGui::MenuItem("Open new debug", nullptr)) {
-                m_debug_windows.emplace_back();
-              }
-              ImGui::MenuItem("Console", nullptr);
-              ImGui::MenuItem("Log", nullptr);
-
-              ImGui::EndMenu();
-            }
-            ImGui::EndMainMenuBar();
-          }
-        }
-        ImGui::End();
-
-
         render();
+        // render_main_debug();
         end_render();
-
-        ImGui::Render();
-        SDL_RenderClear(m_renderer.get());
-        ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
-        SDL_RenderPresent(m_renderer.get());
-
-        std::this_thread::sleep_for(1ns);
       }
     } catch(std::exception &e) {
       spdlog::error("{}", e.what());
@@ -137,6 +107,34 @@ namespace mv {
       spdlog::error("Error occured..");
     }
     return 0;
+  }
+
+  void Application::render_main_debug() {
+    const auto *main_viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 650, main_viewport->WorkPos.y + 20), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(550, 680), ImGuiCond_FirstUseEver);
+
+
+    const auto window_title = fmt::format("Main Debug {} {}###AnimatedTitle", "|/-\\"[(int)(ImGui::GetTime() / 0.25f) & 3], ImGui::GetFrameCount());
+    if(ImGui::Begin(window_title.c_str(), nullptr)) {
+      ImGui::Text("%f", m_ui_scale);
+      ImGui::Text("%d debug views", m_debug_windows.size());
+
+      if(ImGui::BeginMainMenuBar()) {
+        if(ImGui::BeginMenu("Menu")) {
+
+          if(ImGui::MenuItem("Open new debug", nullptr)) {
+            m_debug_windows.emplace_back();
+          }
+          ImGui::MenuItem("Console", nullptr);
+          ImGui::MenuItem("Log", nullptr);
+
+          ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+      }
+    }
+    ImGui::End();
   }
 
   void Application::setup_sdl() {
@@ -168,16 +166,22 @@ namespace mv {
     ImGui::SetNextWindowSize(viewport->WorkSize);
     ImGui::SetNextWindowViewport(viewport->ID);
 
-    const auto *name = "DockSpace##mainwidow";
-    ImGui::Begin(name,
+    const auto *dockspace_name = "DockSpace##mainwidow";
+    const auto dockspace_id = ImGui::GetID(dockspace_name);
+
+    ImGui::Begin(dockspace_name,
       nullptr,
       ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus);
 
-    const auto dockspace_id = ImGui::GetID(name);
+    // const auto dockspace_id = ImGui::GetID(dockspace_name);
     ImGui::DockSpace(dockspace_id, ImVec2(0.0F, 0.0F), ImGuiDockNodeFlags_None);
   }
 
   void Application::end_render() {
     ImGui::End();
+    ImGui::Render();
+    SDL_RenderClear(m_renderer.get());
+    ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
+    SDL_RenderPresent(m_renderer.get());
   }
 }// namespace mv

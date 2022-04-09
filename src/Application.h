@@ -101,6 +101,8 @@ namespace mv {
 
       virtual void set_theme(){};
       virtual void render() = 0;
+      bool process_events();
+      void render_main_debug();
 
       shared_renderer_t get_renderer() { return m_renderer; }
 

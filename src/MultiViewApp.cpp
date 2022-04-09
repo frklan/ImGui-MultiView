@@ -1,6 +1,7 @@
 // Copyright (C) 2021-2022, Fredrik Andersson
 // SPDX-License-Identifier: CC-BY-NC-4.0
 
+#include <algorithm>
 #include <cassert>
 #include <chrono>
 #include <exception>
@@ -12,6 +13,7 @@
 #include <imgui.h>
 #include <imgui_impl_sdl.h>
 #include <imgui_impl_sdlrenderer.h>
+#include <imgui_internal.h>
 #include <implot.h>
 #include <spdlog/spdlog.h>
 
@@ -21,9 +23,11 @@
 namespace mv {
   using namespace std::chrono_literals;
   void MultiViewApp::render() {
-    ImGui::ShowDemoWindow();
-    ImPlot::ShowDemoWindow();
-    ImGui::ShowMetricsWindow();
+    // ImGui::ShowDemoWindow();
+    //  ImPlot::ShowDemoWindow();
+    //  ImGui::ShowMetricsWindow();
+
+    render_split_windows();
   }
 
 
@@ -44,6 +48,61 @@ namespace mv {
     style.Colors[ImGuiCol_Border] = purple;
     style.Colors[ImGuiCol_MenuBarBg] = bg_darker;
     style.Colors[ImGuiCol_TitleBgActive] = bg_darker;
+  }
+
+  void MultiViewApp::render_split_windows() {
+
+    auto *viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowSizeConstraints(ImVec2(300, 300), viewport->Size);
+
+
+    ImGui::SetNextWindowPos(ImVec2(450, 200), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(1024, 768), ImGuiCond_FirstUseEver);
+    ImGui::Begin("GH-4261 (Flipped)");
+    static float w = 200.0f;
+    static float h = 300.0f;
+
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+
+
+    ImGui::BeginChild("Left", ImVec2(w, 0));
+    {
+
+      ImGui::BeginChild("child2", ImVec2(0, h), true);
+      ImGui::Text("left upper");
+      ImGui::Text("h = %f", h);
+      ImGui::EndChild();
+
+
+      ImGui::InvisibleButton("hsplitter", ImVec2(-1, 8.0f));
+      if(ImGui::IsItemActive()) {
+        h = std::max(50.0F, h + ImGui::GetIO().MouseDelta.y);
+      }
+      h = std::min(h, ImGui::GetWindowHeight() - 50.0F);
+
+      ImGui::BeginChild("child3", ImVec2(0, 0), true);
+      ImGui::Text("left lower");
+      ImGui::Text("w = %f", w);
+      ImGui::EndChild();
+
+      ImGui::EndChild();// left part
+    }
+
+    ImGui::SameLine();
+    ImGui::InvisibleButton("vsplitter", ImVec2(8.0f, ImGui::GetContentRegionAvail().y));
+    if(ImGui::IsItemActive()) {
+      w = std::max(50.0F, w + ImGui::GetIO().MouseDelta.x);
+    }
+    w = std::min(w, ImGui::GetWindowWidth() - 50.0F);
+
+    ImGui::SameLine();
+
+    ImGui::BeginChild("right", ImVec2(0, 0), true);
+    ImGui::Text("Right pane");
+    ImGui::EndChild();
+
+    ImGui::PopStyleVar();
+    ImGui::End();
   }
 
 }// namespace mv

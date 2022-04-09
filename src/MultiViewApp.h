@@ -14,5 +14,8 @@ namespace mv {
     private:
       void set_theme() override;
       void render() override;
+
+
+      void render_split_windows();
   };
 }// namespace mv
