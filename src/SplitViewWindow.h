@@ -3,6 +3,9 @@
 
 #pragma once
 
+#include <string_view>
+
+#include <fmt/format.h>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <implot.h>
@@ -12,6 +15,7 @@
 #define UUID_SYSTEM_GENERATOR
 #include <uuid.h>
 
+#include "Application.h"
 #include "Window.h"
 
 namespace mv {
@@ -20,7 +24,7 @@ namespace mv {
       SplitViewWindow() {
         uuids::uuid id = uuids::uuid_system_generator{}();
         m_window_id = uuids::to_string(id);
-        m_window_title = "GH-4261 (Flipped)###" + m_window_id;
+        m_window_title = fmt::format("GH-4261 (Flipped)###{}", m_window_id);
       }
 
 
@@ -43,10 +47,11 @@ namespace mv {
         ImGui::SetNextWindowPos(ImVec2(DEFAULT_WINDOW_POS_X, DEFAULT_WINDOW_POS_Y), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(ImVec2(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT), ImGuiCond_FirstUseEver);
 
-        if(ImGui::Begin(m_window_title.c_str(), &m_is_open, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar)) {
-          render_menu();
+        is_disabled = m_items.size() > 10;
 
+        if(ImGui::Begin(m_window_title.c_str(), &m_is_open, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar)) {
           ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+          ImGui::BeginDisabled(is_disabled);
 
           if(!m_hide_search) {
             render_left_child();
@@ -62,7 +67,14 @@ namespace mv {
 
           render_right_child();
 
+          ImGui::EndDisabled();
+          if(is_disabled) {
+            modal_popup("Please wait!");
+          }
           ImGui::PopStyleVar();
+
+          render_menu();
+          process_shortcuts();
         }
         ImGui::End();
       }
@@ -72,8 +84,8 @@ namespace mv {
       std::string m_window_id{};
       std::string m_some_input{};
       std::vector<std::string> m_items;
-      bool m_window_has_focus{false};
       bool m_hide_search{false};
+      bool is_disabled{false};
 
       static constexpr float DEFAULT_HORIZONTAL_SPLIT = 150.0F;
       static constexpr float DEFAULT_VERTICAL_SPLIT = 250.0F;
@@ -97,19 +109,37 @@ namespace mv {
               m_is_open = false;
             }
 
-            ImGui::MenuItem("Hide search", nullptr, &m_hide_search);
+            ImGui::MenuItem("Hide search", "⌘+B", &m_hide_search);
 
+            if(is_disabled) {
+              ImGui::Separator();
+              if(ImGui::MenuItem("Clear list")) {
+                m_items.clear();
+              }
+            }
             ImGui::EndMenu();
           }
+          ImGui::SameLine(0, 100);
+          ImGui::MenuItem(fmt::format("{}", m_items.size()).c_str(), nullptr, false, false);
 
           ImGui::EndMenuBar();
+        }
+      }
+
+      void process_shortcuts() {
+        if(!ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)) {
+          return;
+        }
+
+        if(ImGui::Shortcut(ImGuiModFlags_Super, ImGuiKey_B, false)) {
+          m_hide_search = !m_hide_search;
         }
       }
 
       void render_top_left_child() {
         ImGui::BeginChild("child2", ImVec2(0, m_horizontal_split), true);
         ImGui::Text("left upper");// NOLINT: hicpp-vararg
-        ImGui::Text("h = %f", static_cast<double>(m_horizontal_split));// NOLINT: hicpp-vararg
+        ImGui::Text("%s", fmt::format("m_vertical_split = {}", m_horizontal_split).c_str());// NOLINT: hicpp-vararg
 
         ImGui::NewLine();
         ImGui::NewLine();
@@ -125,15 +155,11 @@ namespace mv {
       void render_bottom_left_child() const {
         ImGui::BeginChild("child3", ImVec2(0, 0), true);
         ImGui::Text("left lower");// NOLINT: hicpp-vararg
-        ImGui::Text("m_vertical_split = %f", static_cast<double>(m_vertical_split));// NOLINT: hicpp-vararg
+        ImGui::Text("%s", fmt::format("m_vertical_split = {}", m_vertical_split).c_str());// NOLINT: hicpp-vararg
 
         ImGui::NewLine();
         ImGui::Separator();
         ImGui::NewLine();
-
-        if(m_window_has_focus) {
-          ImGui::Text("This window has focus!");
-        }
 
         ImGui::EndChild();
       }
@@ -151,7 +177,7 @@ namespace mv {
 
         ImGui::EndChild();
       }
-      void render_right_child() const {
+      void render_right_child() {
         ImGui::BeginChild("right", ImVec2(0, 0), true);
         ImGui::Text("Right pane");// NOLINT: hicpp-vararg
 
@@ -159,7 +185,7 @@ namespace mv {
         ImGui::Separator();
         ImGui::NewLine();
 
-        if(ImGui::BeginTable(std::string("#itemslist" + m_window_id).c_str(), 1)) {
+        if(ImGui::BeginTable(fmt::format("#itemslist{}", m_window_id).c_str(), 1)) {
           for(auto const &i : m_items) {
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
@@ -168,8 +194,24 @@ namespace mv {
           ImGui::EndTable();
         }
 
-
         ImGui::EndChild();
+      }
+
+      void modal_popup(const std::string_view text) {
+        auto parent_pos = ImGui::GetWindowPos();
+        auto parent_size = ImGui::GetWindowSize();
+
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 10));
+
+        ImGui::Begin(fmt::format("###disabled{}", m_window_id).c_str(), nullptr, ImGuiWindowFlags_Tooltip | ImGuiWindowFlags_ChildWindow | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysUseWindowPadding | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_Modal);
+        ImGui::Text("%s", text.data());// NOLINT: hicpp-vararg
+
+        auto popup_size = ImGui::GetWindowSize();
+        auto popup_pos = ImVec2((parent_pos.x + parent_size.x / 2) - popup_size.x / 2, (parent_pos.y + parent_size.y / 2) - popup_size.y / 2);
+        ImGui::SetWindowPos(popup_pos);
+        ImGui::End();
+
+        ImGui::PopStyleVar();
       }
   };
 }// namespace mv

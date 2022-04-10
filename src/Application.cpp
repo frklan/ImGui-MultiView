@@ -21,7 +21,11 @@
 #include "DebugWindow.h"
 #include "SplitViewWindow.h"
 
-using namespace std::chrono_literals;
+namespace ImGui {
+  bool Shortcut(ImGuiKeyModFlags mod, ImGuiKey key, bool repeat) {
+    return mod == ImGui::GetMergedModFlags() && ImGui::IsKeyPressed(ImGui::GetKeyIndex(key), repeat);
+  }
+}// namespace ImGui
 
 constexpr int WIDTH = 1920 /*2560*/ /*3840*/;
 constexpr int HEIGHT = 1080 /*1440*/ /*2160 */;
@@ -197,6 +201,8 @@ namespace mv {
     style.Colors[ImGuiCol_Border] = purple;
     style.Colors[ImGuiCol_MenuBarBg] = bg_darker;
     style.Colors[ImGuiCol_TitleBgActive] = bg_darker;
+
+    style.DisabledAlpha = 0.33F;// NOLINT: cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers
 
     // Set plot axis bg to transparent.
     auto &plot_style = ImPlot::GetStyle();

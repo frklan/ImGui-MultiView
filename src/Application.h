@@ -14,9 +14,13 @@
 
 #include "Window.h"
 
+
+namespace ImGui {
+  bool Shortcut(ImGuiKeyModFlags mod, ImGuiKey key, bool repeat);
+}// namespace ImGui
+
+
 namespace mv {
-
-
   class Application final {
       using shared_renderer_t = std::shared_ptr<SDL_Renderer>;
       using shared_texture_t = std::shared_ptr<SDL_Texture>;
