@@ -1,6 +1,6 @@
 from conans import ConanFile
 
-class Ftt2Project(ConanFile):
+class MultiViewProject(ConanFile):
     # Note: options are copied from CMake boolean options.
     # When turned off, CMake sometimes passes them as empty strings.
     options = {
