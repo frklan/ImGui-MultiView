@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: CC-BY-NC-4.0
 #pragma once
 
+#include <algorithm>
+#include <fmt/core.h>
 #include <memory>
+#include <numeric>
 #include <span>
 
 #include <SDL2/SDL.h>
@@ -12,13 +15,8 @@
 #define UUID_SYSTEM_GENERATOR
 #include <uuid.h>
 
+#include "FontList.h"
 #include "Window.h"
-
-
-namespace ImGui {
-  bool Shortcut(ImGuiKeyModFlags mod, ImGuiKey key, bool repeat);
-}// namespace ImGui
-
 
 namespace mv {
   class Application final {
@@ -33,23 +31,31 @@ namespace mv {
       int run();
 
     private:
+      std::vector<std::unique_ptr<Window>> m_windows;
       shared_window_t m_window;
       shared_renderer_t m_renderer;
-      float m_ui_scale{1.5F};
 
-      std::vector<std::unique_ptr<Window>> m_windows;
+      FontList m_small_font;
+      FontList m_big_font;
+      FontList m_default_font;
 
-      virtual void set_theme();
-      virtual void render();
-      void process();
-      bool process_events();
+      bool m_window_is_hidden{false};
+      bool m_show_about{false};
 
-      shared_renderer_t get_renderer() { return m_renderer; }
-
-      void begin_render();
-      void end_render();
 
       void setup_sdl();
       void setup_imgui();
+
+      void set_theme();
+      void load_fonts();
+
+      void begin_render();
+      void render();
+      void end_render();
+
+      void render_main_menu();
+      void render_about_box();
+
+      bool process_events();
   };
 }// namespace mv

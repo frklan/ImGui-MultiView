@@ -16,6 +16,7 @@
 #include <uuid.h>
 
 #include "Application.h"
+#include "ImGuiUtil.h"
 #include "Window.h"
 
 namespace mv {
@@ -24,7 +25,7 @@ namespace mv {
       SplitViewWindow() {
         uuids::uuid id = uuids::uuid_system_generator{}();
         m_window_id = uuids::to_string(id);
-        m_window_title = fmt::format("GH-4261 (Flipped)###{}", m_window_id);
+        m_window_title = fmt::format("MV-1337 ###{}", m_window_id);
       }
 
 
@@ -69,7 +70,7 @@ namespace mv {
 
           ImGui::EndDisabled();
           if(is_disabled) {
-            modal_popup("Please wait!");
+            y44::im_popup_modal("Please wait!", m_window_id);
           }
           ImGui::PopStyleVar();
 
@@ -83,24 +84,22 @@ namespace mv {
       std::string m_window_title{};
       std::string m_window_id{};
       std::string m_some_input{};
-      std::vector<std::string> m_items;
+      std::vector<std::string> m_items{};
+      float m_horizontal_split{DEFAULT_HORIZONTAL_SPLIT};
+      float m_vertical_split{DEFAULT_VERTICAL_SPLIT};
       bool m_hide_search{false};
       bool is_disabled{false};
 
       static constexpr float DEFAULT_HORIZONTAL_SPLIT = 150.0F;
       static constexpr float DEFAULT_VERTICAL_SPLIT = 250.0F;
-
-      float m_horizontal_split{DEFAULT_HORIZONTAL_SPLIT};
-      float m_vertical_split{DEFAULT_VERTICAL_SPLIT};
-
-      static constexpr float MINIMUM_SPLIT_SIZE = 50.0F;
-      static constexpr float SPLIT_GAP = 8.0F;
       static constexpr float DEFAULT_WINDOW_POS_X = 450.0F;
       static constexpr float DEFAULT_WINDOW_POS_Y = 200.0F;
       static constexpr float DEFAULT_WINDOW_WIDTH = 1024.0F;
       static constexpr float DEFAULT_WINDOW_HEIGHT = 768.0F;
       static constexpr float MINIMUM_WINDOW_HEIGHT = 300.0F;
       static constexpr float MINIMUM_WINDOW_WIDTH = 300.0F;
+      static constexpr float MINIMUM_SPLIT_SIZE = 50.0F;
+      static constexpr float SPLIT_GAP = 8.0F;
 
       void render_menu() {
         if(ImGui::BeginMenuBar()) {
@@ -131,15 +130,15 @@ namespace mv {
           return;
         }
 
-        if(ImGui::Shortcut(ImGuiModFlags_Super, ImGuiKey_B, false)) {
+        if(y44::im_shortcut(ImGuiModFlags_Super, ImGuiKey_B, false)) {
           m_hide_search = !m_hide_search;
         }
       }
 
       void render_top_left_child() {
         ImGui::BeginChild("child2", ImVec2(0, m_horizontal_split), true);
-        ImGui::Text("left upper");// NOLINT: hicpp-vararg
-        ImGui::Text("%s", fmt::format("m_vertical_split = {}", m_horizontal_split).c_str());// NOLINT: hicpp-vararg
+        y44::im_text("left upper");
+        y44::im_text("m_vertical_split = {}", m_horizontal_split);
 
         ImGui::NewLine();
         ImGui::NewLine();
@@ -154,8 +153,8 @@ namespace mv {
       }
       void render_bottom_left_child() const {
         ImGui::BeginChild("child3", ImVec2(0, 0), true);
-        ImGui::Text("left lower");// NOLINT: hicpp-vararg
-        ImGui::Text("%s", fmt::format("m_vertical_split = {}", m_vertical_split).c_str());// NOLINT: hicpp-vararg
+        y44::im_text("left lower");
+        y44::im_text("m_vertical_split = {}", m_vertical_split);
 
         ImGui::NewLine();
         ImGui::Separator();
@@ -179,7 +178,7 @@ namespace mv {
       }
       void render_right_child() {
         ImGui::BeginChild("right", ImVec2(0, 0), true);
-        ImGui::Text("Right pane");// NOLINT: hicpp-vararg
+        y44::im_text("Right pane");
 
         ImGui::NewLine();
         ImGui::Separator();
@@ -189,29 +188,11 @@ namespace mv {
           for(auto const &i : m_items) {
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
-            ImGui::Text("%s", i.c_str());// NOLINT: hicpp-vararg
+            y44::im_text("{}", i);
           }
           ImGui::EndTable();
         }
-
         ImGui::EndChild();
-      }
-
-      void modal_popup(const std::string_view text) {
-        auto parent_pos = ImGui::GetWindowPos();
-        auto parent_size = ImGui::GetWindowSize();
-
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 10));
-
-        ImGui::Begin(fmt::format("###disabled{}", m_window_id).c_str(), nullptr, ImGuiWindowFlags_Tooltip | ImGuiWindowFlags_ChildWindow | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysUseWindowPadding | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_Modal);
-        ImGui::Text("%s", text.data());// NOLINT: hicpp-vararg
-
-        auto popup_size = ImGui::GetWindowSize();
-        auto popup_pos = ImVec2((parent_pos.x + parent_size.x / 2) - popup_size.x / 2, (parent_pos.y + parent_size.y / 2) - popup_size.y / 2);
-        ImGui::SetWindowPos(popup_pos);
-        ImGui::End();
-
-        ImGui::PopStyleVar();
       }
   };
 }// namespace mv

@@ -41,3 +41,5 @@ We use SemVer for versioning. For the versions available, see the tags on the re
 This project is licensed under the CC BY-NC-SA License - see the [LICENSE](License) file for details
 
 For commercial/proprietary licensing, please contact the project owner
+
+Courier Prime Code font licensed under OFL (SIL Open Font License).

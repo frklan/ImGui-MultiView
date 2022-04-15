@@ -21,10 +21,6 @@ namespace mv {
       Window &operator=(const Window &) = default;
       Window &operator=(Window &&) = default;
 
-      void process() {
-        m_window_has_focus = ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows);
-      }
-
       virtual void render() = 0;
 
       [[nodiscard]] bool should_close() const {
@@ -33,6 +29,5 @@ namespace mv {
 
     protected:
       bool m_is_open{true};// NOLINT: cppcoreguidelines-non-private-member-variables-in-classes
-      bool m_window_has_focus{false};
   };
 }// namespace mv
