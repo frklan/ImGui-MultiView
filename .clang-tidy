@@ -1,7 +1,5 @@
 ---
-Checks: '*,-fuchsia-*,-google-*,-zircon-*,-abseil-*,-modernize-use-trailing-return-type,-llvm*,-altera*,-readability-convert-member-functions-to-static,-cppcoreguidelines-pro-type-vararg'
-WarningsAsErrors: ''
-HeaderFilterRegex: ''
+Checks: "*,-fuchsia-*,-google-*,-zircon-*,-abseil-*,-modernize-use-trailing-return-type,-llvm*,-altera*,-readability-convert-member-functions-to-static,-cppcoreguidelines-pro-type-vararg"
+WarningsAsErrors: ""
+HeaderFilterRegex: "build/_deps"
 FormatStyle: none
-
-
