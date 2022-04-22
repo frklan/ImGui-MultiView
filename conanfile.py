@@ -21,3 +21,5 @@ class MultiViewProject(ConanFile):
 
     def configure(self):
         self.options["stduuid"].with_cxx20_span = True 
+        #self.options["sdl"].nas = False
+       
